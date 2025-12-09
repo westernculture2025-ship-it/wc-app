@@ -1,0 +1,88 @@
+<div class="reports-container">
+  <div class="reports-header">
+    <h2>Reports</h2>
+    <div class="header-actions">
+      <button class="btn btn-export" (click)="exportReport()" [disabled]="reportData.length === 0">
+        <span class="icon">📥</span> Export CSV
+      </button>
+      <button class="btn btn-print" (click)="printReport()" [disabled]="reportData.length === 0">
+        <span class="icon">🖨️</span> Print
+      </button>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters-section">
+    <div class="filter-group">
+      <label for="reportType">Report Type:</label>
+      <select id="reportType" [(ngModel)]="filter.reportType" class="form-control">
+        <option *ngFor="let type of reportTypes" [value]="type.value">
+          {{ type.label }}
+        </option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label for="startDate">Start Date:</label>
+      <input type="date" id="startDate" [(ngModel)]="filter.startDate" class="form-control">
+    </div>
+
+    <div class="filter-group">
+      <label for="endDate">End Date:</label>
+      <input type="date" id="endDate" [(ngModel)]="filter.endDate" class="form-control">
+    </div>
+
+    <div class="filter-actions">
+      <button class="btn btn-generate" (click)="generateReport()">
+        <span class="icon">📊</span> Generate Report
+      </button>
+    </div>
+  </div>
+
+  <!-- Report Summary -->
+  <div class="summary-section" *ngIf="!loading && reportData.length > 0">
+    <div class="summary-card">
+      <h4>Total Sales</h4>
+      <p class="summary-value">₹{{ reportSummary.totalSales | number:'1.2-2' }}</p>
+    </div>
+    <div class="summary-card">
+      <h4>Total Records</h4>
+      <p class="summary-value">{{ reportSummary.totalProducts }}</p>
+    </div>
+    <div class="summary-card" *ngIf="filter.reportType === 'sales'">
+      <h4>Average Sale</h4>
+      <p class="summary-value">₹{{ reportSummary.avgSale | number:'1.2-2' }}</p>
+    </div>
+    <div class="summary-card" *ngIf="filter.reportType === 'inventory'">
+      <h4>Total Quantity</h4>
+      <p class="summary-value">{{ reportSummary.totalQuantity }}</p>
+    </div>
+  </div>
+
+  <!-- Report Data Table -->
+  <div class="report-table-container" *ngIf="!loading && reportData.length > 0">
+    <table class="report-table">
+      <thead>
+        <tr>
+          <th *ngFor="let header of reportData[0] | keyvalue">{{ header.key }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let row of reportData">
+          <td *ngFor="let cell of row | keyvalue">{{ cell.value }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- No Data -->
+  <div class="no-data" *ngIf="!loading && reportData.length === 0">
+    <p>No data available for the selected filters. Please adjust your filters and try again.</p>
+  </div>
+
+  <!-- Loading Spinner -->
+  <div class="loading-spinner" *ngIf="loading">
+    <div class="spinner"></div>
+    <p>Generating report...</p>
+  </div>
+</div>

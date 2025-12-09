@@ -1,0 +1,90 @@
+<div class="barcode-label-container">
+
+  <!-- Modern Header with Search -->
+  <div class="barcode-header no-print">
+    <h2>🏷️ Barcode Label Printing</h2>
+    <div class="header-actions">
+      <div class="compact-search">
+        <input
+          type="text"
+          [(ngModel)]="searchQuery"
+          (input)="onSearch()"
+          placeholder="🔍 Search products by name, barcode, HSN..."
+          class="compact-search-input">
+        <button class="btn-search" (click)="onSearch()">Search</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Selection Area -->
+  <div class="selection-area no-print">
+    <!-- scanned-product UI removed (scanning handled elsewhere) -->
+    <div class="available-products">
+      <h3>Available Products</h3>
+      <div class="product-list">
+        <div *ngFor="let product of filteredProducts" class="product-item">
+          <div class="product-info">
+            <strong>{{ product.barcode }}</strong> - {{ product.productName }}
+            <span class="product-price">₹{{ product.retailPrice }}</span>
+          </div>
+          <button (click)="addToSelection(product)" class="btn btn-sm btn-add">Add</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="selected-products">
+      <div class="selected-header">
+        <h3>Selected for Printing ({{ selectedProducts.length }})</h3>
+        <div>
+          <button *ngIf="selectedProducts.length > 0" (click)="clearSelection()" class="btn btn-sm btn-secondary">Clear All</button>
+        </div>
+      </div>
+
+      <div *ngIf="selectedProducts.length === 0" class="empty-selection">
+        <p>No products selected. Add products from the left to print labels.</p>
+      </div>
+
+      <div *ngIf="selectedProducts.length > 0" class="selected-list">
+        <div *ngFor="let product of selectedProducts; let i = index" class="selected-item">
+          <div class="product-info">
+            <strong>{{ product.barcode }}</strong> - {{ product.productName }}
+          </div>
+          <div class="quantity-control">
+            <label>Qty:</label>
+            <input 
+              type="number" 
+              min="1" 
+              max="100"
+              [(ngModel)]="productQuantities[i]" 
+              class="qty-input"
+              (change)="updateQuantity(i)">
+          </div>
+          <button (click)="removeFromSelection(product.id!)" class="btn btn-sm btn-danger">×</button>
+        </div>
+      </div>
+
+      <button *ngIf="selectedProducts.length > 0" (click)="printLabels()" class="btn btn-primary btn-print">
+        <i class="fas fa-print"></i> Print {{ getTotalLabels() }} Label(s) ({{ selectedProducts.length }} products)
+      </button>
+    </div>
+  </div>
+
+  <!-- Print Preview / Labels -->
+  <div id="label-template" class="labels-container print-only">
+    <div *ngFor="let product of selectedProducts" class="barcode-label">
+      <div class="label-top">
+        <div class="store-name">{{ appName}}</div>
+      </div>
+      <div class="label-title">{{ product.productName | uppercase }}</div>
+      <div class="barcode-wrap">
+        <div class="barcode-image" #barcodeImage [attr.data-barcode]="product.barcode"></div>
+        <div class="product-size">{{ product.size }}</div>
+      </div>
+      <div class="barcode-text">
+        <span class="barcode-number">{{ product.barcode }}</span>
+        <span class="barcode-price">Rs.{{ product.retailPrice }}</span>
+      </div>
+    </div>
+  </div>
+<br><br><br><br><br><br><br><br>
+</div>

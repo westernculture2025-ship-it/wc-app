@@ -1,0 +1,78 @@
+<div class="dashboard-container">
+  <div class="dashboard-header">
+    <h2>Dashboard</h2>
+    <button class="btn btn-refresh" (click)="refreshDashboard()">
+      <span class="icon">🔄</span> Refresh
+    </button>
+  </div>
+
+  <div class="dashboard-content" *ngIf="!loading">
+    <!-- Metrics Cards -->
+    <div class="metrics-grid">
+      <div class="metric-card products">
+        <div class="metric-icon">📦</div>
+        <div class="metric-details">
+          <h3>Total Products</h3>
+          <p class="metric-value">{{ totalProducts }}</p>
+        </div>
+      </div>
+
+      <div class="metric-card invoices">
+        <div class="metric-icon">🧾</div>
+        <div class="metric-details">
+          <h3>Total Invoices</h3>
+          <p class="metric-value">{{ totalInvoices }}</p>
+        </div>
+      </div>
+
+      <div class="metric-card revenue">
+        <div class="metric-icon">💰</div>
+        <div class="metric-details">
+          <h3>Total Revenue</h3>
+          <p class="metric-value">₹{{ totalRevenue | number:'1.2-2' }}</p>
+        </div>
+      </div>
+
+      <div class="metric-card low-stock">
+        <div class="metric-icon">⚠️</div>
+        <div class="metric-details">
+          <h3>Low Stock Items</h3>
+          <p class="metric-value">{{ lowStockProducts }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Invoices -->
+    <div class="dashboard-section">
+      <h3>Recent Invoices</h3>
+      <div class="recent-invoices" *ngIf="recentInvoices.length > 0; else noInvoices">
+        <table class="invoice-table">
+          <thead>
+            <tr>
+              <th>Invoice No</th>
+              <th>Customer</th>
+              <th>Date</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let invoice of recentInvoices">
+              <td>{{ invoice.invoiceNo }}</td>
+              <td>{{ invoice.customerName }}</td>
+              <td>{{ invoice.date | date:'short' }}</td>
+              <td>₹{{ invoice.total | number:'1.2-2' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <ng-template #noInvoices>
+        <p class="no-data">No invoices yet</p>
+      </ng-template>
+    </div>
+  </div>
+
+  <div class="loading-spinner" *ngIf="loading">
+    <div class="spinner"></div>
+    <p>Loading dashboard data...</p>
+  </div>
+</div>

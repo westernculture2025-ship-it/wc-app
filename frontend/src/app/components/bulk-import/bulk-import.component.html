@@ -1,0 +1,109 @@
+<div class="bulk-import-container">
+  <!-- Modern Header with Actions -->
+  <div class="bulk-import-header">
+    <h2>📤 Bulk Import/Export</h2>
+    <div class="header-actions">
+      <button class="btn-download" (click)="downloadTemplate()">
+        📥 Download Template
+      </button>
+      <div class="upload-wrapper">
+        <input 
+          type="file" 
+          id="fileInput"
+          accept=".xlsx,.xls,.csv" 
+          (change)="onFileSelected($event)"
+          [disabled]="isProcessing"
+        />
+        <label for="fileInput" class="btn-upload" [class.disabled]="isProcessing">
+          📁 {{ selectedFile ? selectedFile.name : 'Choose File' }}
+        </label>
+      </div>
+      <button 
+        class="btn-process" 
+        (click)="uploadFile()"
+        [disabled]="!selectedFile || isProcessing"
+      >
+        <span *ngIf="!isProcessing">⬆️ Upload & Process</span>
+        <span *ngIf="isProcessing">Processing {{ uploadProgress }}%</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Progress Bar -->
+  <div class="progress-bar" *ngIf="isProcessing">
+    <div class="progress-fill" [style.width.%]="uploadProgress"></div>
+  </div>
+
+  <!-- Upload Info -->
+  <div class="upload-info" *ngIf="!isProcessing">
+    <p><strong>Supported:</strong> Excel (.xlsx, .xls), CSV (.csv) | <strong>Required:</strong> Supplier Name, Product Name, Retail Price, Quantity</p>
+  </div>
+
+  <!-- Upload History Table -->
+  <div class="history-section">
+    <div class="section-content">
+  <!-- Upload History Table -->
+  <div class="history-section">
+    <div class="section-content">
+      <div class="history-table-container" *ngIf="uploadHistory.length > 0">
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th>S.No</th>
+              <th>File Name</th>
+              <th>Upload Date</th>
+              <th>Total</th>
+              <th>Success</th>
+              <th>Failed</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let history of uploadHistory; let i = index" [ngClass]="getStatusClass(history.status)">
+              <td>{{ i + 1 }}</td>
+              <td>
+                <strong>{{ history.fileName }}</strong>
+                <div class="error-details" *ngIf="history.errors && history.errors.length > 0">
+                  <details>
+                    <summary>{{ history.errors.length }} errors</summary>
+                    <ul class="error-list">
+                      <li *ngFor="let error of history.errors">{{ error }}</li>
+                    </ul>
+                  </details>
+                </div>
+              </td>
+              <td>{{ history.uploadDate | date:'dd/MM/yyyy HH:mm' }}</td>
+              <td>{{ history.totalRecords }}</td>
+              <td class="success-count">{{ history.successCount }}</td>
+              <td class="failed-count">{{ history.failureCount }}</td>
+              <td>
+                <span class="status-badge" [ngClass]="getStatusClass(history.status)">
+                  {{ getStatusIcon(history.status) }} {{ history.status | titlecase }}
+                </span>
+              </td>
+              <td class="actions-cell">
+                <button 
+                  class="btn btn-sm btn-secondary" 
+                  (click)="downloadHistoryFile(history)"
+                  title="Download Report">
+                  📥 Report
+                </button>
+                <button 
+                  class="btn btn-sm btn-danger" 
+                  (click)="deleteHistory(history)"
+                  title="Delete">
+                  🗑️
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="empty-state" *ngIf="uploadHistory.length === 0">
+        <p>📊 No upload history yet. Start by uploading your first file!</p>
+      </div>
+    </div>
+  </div>
+</div>

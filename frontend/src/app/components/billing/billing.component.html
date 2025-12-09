@@ -1,0 +1,317 @@
+<div class="billing-container">
+  <div class="billing-header">
+    <h2>🛒 Billing & Payment</h2>
+    <div class="header-right">
+      <!-- <div class="cart-badge" *ngIf="getCartArray().length > 0">
+        {{ getCartArray().length }} item(s) - ₹{{ getTotalAmount().toFixed(2) }}
+      </div> -->
+      <!-- Compact Scan Input -->
+      <div class="compact-scan">
+        <input 
+          type="text" 
+          [(ngModel)]="manualBarcode" 
+          (keyup.enter)="addManualBarcode()"
+          (input)="onBarcodeInput()"
+          placeholder="📱 Scan or enter barcode..."
+          class="compact-barcode-input"
+          #barcodeInput>
+        <button (click)="addManualBarcode()" class="btn-compact-add">+</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 1: Cart Items -->
+  <div class="billing-step" *ngIf="getCartArray().length > 0">
+    <div class="step-header">
+      <div>
+        <span class="step-number">1</span>
+        <h3>Cart Items</h3>
+      </div>
+      <div class="header-actions">
+        <span class="items-count">{{ getCartArray().length }} item(s)</span>
+        <span class="items-count qty-count">{{ getTotalQuantity() }} Quantity</span>
+        <button 
+          (click)="clearCart()" 
+          class="btn btn-sm btn-secondary">
+          Clear All
+        </button>
+        <button 
+          (click)="showCartItems = !showCartItems" 
+          class="btn btn-sm btn-info">
+          {{ showCartItems ? '▲' : '▼' }}
+        </button>
+      </div>
+    </div>
+    
+    <div class="cart-items-simple" *ngIf="showCartItems" [@slideDown]>
+      <table class="cart-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Product</th>
+            <th>Qty</th>
+            <th>Price</th>
+            <th>Disc %</th>
+            <th>Disc ₹</th>
+            <th>Total</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of getCartArray(); let i = index">
+            <td>{{ i + 1 }}</td>
+            <td>
+                {{ item.productName }} <span class="item-code">{{ item.barcode }}</span>
+                <!-- <div class="item-code">{{ item.barcode }}</div> -->
+            </td>
+            <td>
+              <input 
+                type="number" 
+                [value]="item.quantity" 
+                (input)="updateQuantity(item.productId, +$any($event.target).value)"
+                min="1"
+                class="input-compact">
+            </td>
+            <td>
+              <span class="calc-text">₹{{ item.price }} × {{ item.quantity }}</span>
+            </td>
+            <td>
+              <input 
+                type="number" 
+                [(ngModel)]="item.discountPercentage"
+                (input)="updateDiscountPercent(item.productId, item.discountPercentage)"
+                min="0"
+                max="100"
+                placeholder="0"
+                appTwoDecimal
+                class="input-compact">
+            </td>
+            <td>
+              <input 
+                type="number" 
+                [(ngModel)]="item.discountAmount"
+                (input)="updateDiscountAmount(item.productId, item.discountAmount)"
+                min="0"
+                placeholder="0"
+                appTwoDecimal
+                class="input-compact">
+            </td>
+            <td><span class="total-cell">₹{{ item.total.toFixed(2) }}</span></td>
+            <td>
+              <button (click)="removeFromCart(item.productId)" class="btn-remove-new">×</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Step 2: Customer & Payment -->
+  <div class="billing-step" *ngIf="getCartArray().length > 0">
+    <div class="step-header">
+      <div>
+        <span class="step-number">2</span>
+        <h3>Customer & Payment</h3>
+      </div>
+      <div>
+        <button 
+              (click)="createInvoice()" 
+              [disabled]="loading" 
+              class="btn btn-success btn-sm">
+              {{ loading ? 'Processing...' : '✓ Complete & Print' }}
+        </button>
+      </div>
+    </div>
+    
+    <div class="customer-payment-grid">
+      <!-- Customer Info -->
+      <div class="customer-quick">
+        <div class="customer-compact-row">
+          <div class="input-group">
+            <input 
+              type="tel" 
+              [(ngModel)]="customerPhone" 
+              (input)="onPhoneInput()"
+              placeholder="Phone Number *"
+              class="form-control"
+              minlength="10"
+              maxlength="10"
+              pattern="[0-9]*"
+              required>
+            <small *ngIf="isLoading" class="status-text loading">⏳</small>
+            <small *ngIf="!isLoading && customerStatus === 'exists'" class="status-text exists">✓</small>
+            <small *ngIf="!isLoading && customerStatus === 'not-exists'" class="status-text new">New</small>
+          </div>
+          <input 
+            type="text" 
+            [(ngModel)]="customerName" 
+            placeholder="Customer Name *"
+            class="form-control"
+            required>
+        </div>
+        
+        <div class="customer-actions-row">
+          <button 
+            (click)="saveCustomer()" 
+            [disabled]="!isCustomerDataChanged()" 
+            class="btn btn-sm btn-primary">
+            💾 Save
+          </button>
+          <button 
+            class="toggle-details-btn" 
+            (click)="showMoreCustomerDetails = !showMoreCustomerDetails">
+            {{ showMoreCustomerDetails ? '− Less' : '+ More' }}
+          </button>
+        </div>
+        
+        <div class="more-details" *ngIf="showMoreCustomerDetails">
+          <div class="compact-inputs">
+            <input 
+              type="email" 
+              [(ngModel)]="customerEmail" 
+              placeholder="Email"
+              class="form-control">
+            <input 
+              type="text" 
+              [(ngModel)]="customerDob" 
+              placeholder="DOB (MM/DD/YYYY)"
+              maxlength="10"
+              pattern="\d{2}/\d{2}/\d{4}"
+              class="form-control">
+          </div>
+          <div class="compact-inputs">
+            <select 
+              [(ngModel)]="customerMaritalStatus" 
+              class="form-control">
+              <option value="" disabled selected>Marital Status</option>
+              <option value="Single">Single</option>
+              <option value="Married">Married</option>
+              <option value="Divorced">Divorced</option>
+              <option value="Widowed">Widowed</option>
+            </select>
+             <input 
+              type="text" 
+              [(ngModel)]="customerDom" 
+              placeholder="DOM (MM/DD/YYYY)"
+              maxlength="10"
+              pattern="\d{2}/\d{2}/\d{4}"
+              class="form-control">
+          </div>
+          <input 
+            type="text" 
+            [(ngModel)]="customerAddress" 
+            placeholder="Address"
+            class="form-control">
+        </div>
+      </div>
+
+      <!-- Tax Rate Settings -->
+      <div>
+        <div class="tax-settings">
+          <!-- <h4>Tax Settings</h4> -->
+          <div class="payment-method-inline">
+            <label>Payment Method:</label>
+            <div class="payment-options">
+              <button 
+                [class.active]="paymentMethod === 'cash'"
+                (click)="paymentMethod = 'cash'"
+                class="payment-btn">
+                💵 Cash
+              </button>
+              <button 
+                [class.active]="paymentMethod === 'card'"
+                (click)="paymentMethod = 'card'"
+                class="payment-btn">
+                💳 Card
+              </button>
+              <button 
+                [class.active]="paymentMethod === 'upi'"
+                (click)="paymentMethod = 'upi'"
+                class="payment-btn">
+                📱 UPI
+              </button>
+            </div>
+          </div>
+          <div class="tax-input-row-combined">
+            <div class="tax-input-group">
+              <label>CGST %:</label>
+              <input 
+                type="number" 
+                [(ngModel)]="cgstRate" 
+                min="0" 
+                max="100" 
+                step="0.1"
+                class="form-control-sm">
+            </div>
+            <div class="tax-input-group">
+              <label>SGST %:</label>
+              <input 
+                type="number" 
+                [(ngModel)]="sgstRate" 
+                min="0" 
+                max="100" 
+                step="0.1"
+                class="form-control-sm">
+            </div>
+          </div>
+        </div>
+        <!-- <div class="summary-line">Taxable Amt : ₹{{ getTaxableAmount().toFixed(2) }}, CGST ({{ cgstRate }}%) ₹{{ getCgstAmount().toFixed(2) }}, SGST ({{ sgstRate }}%) ₹{{ getSgstAmount().toFixed(2) }}</div> -->
+      </div>
+
+      <!-- Payment Summary -->
+      <div>
+        <div class="payment-summary">
+          <div class="summary-compact">
+            <div class="summary-line">
+              <span>Subtotal (Before Discount):</span>
+              <span>₹{{ getSubtotal().toFixed(2) }}</span>
+            </div>
+            <div class="summary-line discount-line">
+              <span>Discount Applied:</span>
+              <span>- ₹{{ getDiscountAmount().toFixed(2) }}</span>
+            </div>
+            <div class="summary-line total-line">
+              <span>TOTAL AMOUNT:</span>
+              <span>₹{{ getTotalAmount().toFixed(2) }}</span>
+            </div>
+            <!-- <div class="summary-line">Taxable Amt ₹{{ getTaxableAmount().toFixed(2) }}, CGST ({{ cgstRate }}%) ₹{{ getCgstAmount().toFixed(2) }}, SGST ({{ sgstRate }}%) ₹{{ getSgstAmount().toFixed(2) }}</div> -->
+          </div>
+
+          <!-- <div class="gst-summary-section">
+            <h4>GST Summary</h4>
+            <table class="gst-summary-table">
+              <thead>
+                <tr>
+                  <th>Taxable Amt</th>
+                  <th>CGST ({{ cgstRate }}%)</th>
+                  <th>SGST ({{ sgstRate }}%)</th>
+                  <th>Total Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>₹{{ getTaxableAmount().toFixed(2) }}</td>
+                  <td>₹{{ getCgstAmount().toFixed(2) }}</td>
+                  <td>₹{{ getSgstAmount().toFixed(2) }}</td>
+                  <td>₹{{ getTotalAmount().toFixed(2) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div> -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Empty State -->
+  <div class="empty-state" *ngIf="getCartArray().length === 0">
+    <div class="empty-icon">🛒</div>
+    <h3>Start Scanning Products</h3>
+    <p>Scan or enter product barcodes to add items to the cart</p>
+  </div>
+
+  <!-- Hidden Bill Component for Printing -->
+  <div *ngIf="invoice" id="billReceipt">
+    <app-bill [invoice]="invoice"></app-bill>
+  </div>
+</div>

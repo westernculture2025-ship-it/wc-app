@@ -1,0 +1,267 @@
+<div class="invoice-container">
+  <!-- Modern Header with Search -->
+  <div class="invoice-header">
+    <h2>📋 Invoices</h2>
+    <div class="header-actions" *ngIf="!selectedInvoice">
+      <div class="compact-search">
+        <input 
+          type="text" 
+          [(ngModel)]="searchQuery"
+          (input)="onSearch()"
+          placeholder="🔍 Search by invoice #, barcode, customer..."
+          class="compact-search-input">
+        <button class="btn-search" (click)="onSearch()">Search</button>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="loading" class="loading">Loading invoices...</div>
+
+  <!-- Invoice List -->
+  <div *ngIf="!loading && !selectedInvoice" class="invoice-list">
+    <div *ngIf="filteredInvoices.length === 0" class="no-invoices">
+      <p>No invoices found.</p>
+    </div>
+
+    <div *ngIf="filteredInvoices.length > 0" class="invoices-table-container">
+      <table class="invoices-table">
+        <thead>
+          <tr>
+            <th>S.No</th>
+            <th>Invoice #</th>
+            <th>Date</th>
+            <th>Customer</th>
+            <th>Phone</th>
+            <th>Items</th>
+            <th>Payment</th>
+            <th>Total</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let invoice of paginatedInvoices; let i = index">
+            <td>{{ (currentPage - 1) * pageSize + i + 1 }}</td>
+            <td><strong>{{ invoice.invoiceNumber || invoice.id }}</strong></td>
+            <td>{{ invoice.createdAt | date:'dd/MM/yyyy HH:mm' }}</td>
+            <td>{{ invoice.customer?.name || '-' }}</td>
+            <td>{{ invoice.customer?.phoneNumber || '-' }}</td>
+            <td>{{ invoice.invoiceItems.length }}</td>
+            <td>{{ invoice.paymentMethod || 'N/A' }}</td>
+            <td><strong>₹{{ invoice.total }}</strong></td>
+            <td class="actions-cell">
+              <button (click)="viewInvoice(invoice)" class="btn btn-sm btn-primary">View</button>
+              <button (click)="downloadPDF(invoice.id)" class="btn btn-sm btn-secondary">PDF</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      
+      <!-- Pagination -->
+      <div class="pagination-container">
+        <div class="pagination-info">
+          Showing {{ (currentPage - 1) * pageSize + 1 }} to {{ Math.min(currentPage * pageSize, filteredInvoices.length) }} of {{ filteredInvoices.length }} invoices
+        </div>
+        <div class="pagination-controls">
+          <button 
+            class="btn btn-sm btn-secondary" 
+            (click)="goToPage(1)" 
+            [disabled]="currentPage === 1">
+            First
+          </button>
+          <button 
+            class="btn btn-sm btn-secondary" 
+            (click)="goToPage(currentPage - 1)" 
+            [disabled]="currentPage === 1">
+            Prev
+          </button>
+          <span class="page-numbers">
+            <button 
+              *ngFor="let page of getPageNumbers()" 
+              class="btn btn-sm" 
+              [class.btn-primary]="page === currentPage"
+              [class.btn-secondary]="page !== currentPage"
+              (click)="goToPage(page)">
+              {{ page }}
+            </button>
+          </span>
+          <button 
+            class="btn btn-sm btn-secondary" 
+            (click)="goToPage(currentPage + 1)" 
+            [disabled]="currentPage === totalPages">
+            Next
+          </button>
+          <button 
+            class="btn btn-sm btn-secondary" 
+            (click)="goToPage(totalPages)" 
+            [disabled]="currentPage === totalPages">
+            Last
+          </button>
+        </div>
+        <div class="page-size-selector">
+          <label>Per page:</label>
+          <select [(ngModel)]="pageSize" (change)="onPageSizeChange()" class="page-size-select">
+            <option [value]="10">10</option>
+            <option [value]="25">25</option>
+            <option [value]="50">50</option>
+            <option [value]="100">100</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Invoice Detail View -->
+  <div *ngIf="selectedInvoice" class="invoice-detail">
+    <div class="invoice-actions-top no-print">
+      <button (click)="closeInvoiceView()" class="btn btn-secondary">← Back to List</button>
+      <div>
+        <button (click)="toggleView()" class="btn btn-info">
+          {{ showBillView ? '📄 Show Invoice' : '🧾 Show Bill' }}
+        </button>
+        <button (click)="printInvoice()" class="btn btn-primary">🖨 Print</button>
+        <button (click)="downloadPDF(selectedInvoice.id)" class="btn btn-success">📥 Download PDF</button>
+      </div>
+    </div>
+
+    <!-- Bill View -->
+    <div *ngIf="showBillView" class="bill-view-container">
+      <app-bill 
+        [invoice]="selectedInvoice">
+      </app-bill>
+    </div>
+
+    <div *ngIf="!showBillView" class="invoice-document">
+      <!-- Company Header -->
+      <div class="company-header">
+        <div class="company-logo-section">
+          <h1 class="company-name">WESTERN CULTURE</h1>
+          <p class="company-tagline">Premium Textile Collection</p>
+        </div>
+        <div class="company-details">
+          <p>123, Main Market, Textile Hub</p>
+          <p>City - 400001, Maharashtra, India</p>
+          <p>Ph: +91 98765 43210</p>
+          <p>Email: info@westernculture.com</p>
+          <p><strong>GSTIN:</strong> 27AAAAA0000A1Z5</p>
+        </div>
+      </div>
+
+      <div class="invoice-title-bar">
+        <h2>TAX INVOICE</h2>
+      </div>
+
+      <!-- Invoice Info Grid -->
+      <div class="invoice-info-grid">
+        <div class="invoice-details-box">
+          <p><strong>Invoice No:</strong> {{ selectedInvoice.invoiceNumber || selectedInvoice.id }}</p>
+          <p><strong>Date:</strong> {{ formatDate(selectedInvoice.createdAt) }}</p>
+          <p><strong>Payment Mode:</strong> {{ selectedInvoice.paymentMethod || 'Cash' }}</p>
+        </div>
+        <div class="customer-details-box">
+          <h4>Bill To:</h4>
+          <p class="customer-name">{{ selectedInvoice.customer?.name || 'Walk-in Customer' }}</p>
+          <p>
+            Phone: {{ selectedInvoice.customer?.phoneNumber }}
+          </p>
+          <p *ngIf="selectedInvoice.customer?.email">{{ selectedInvoice.customer.email }}</p>
+          <p *ngIf="selectedInvoice.customer?.address">{{ selectedInvoice.customer.address }}</p>
+        </div>
+      </div>
+
+      <!-- Items Table -->
+      <div class="invoice-items-section">
+        <table class="professional-items-table">
+          <thead>
+            <tr>
+              <th class="col-sr">Sr.</th>
+              <th class="col-description">Product</th>
+              <th class="col-qty">Qty</th>
+              <th class="col-rate">Rate (₹)</th>
+              <th class="col-amount">Amt (₹)</th>
+              <th class="col-disc">Disc. (%)</th>
+              <th class="col-disc">Disc. (₹)</th>
+              <th class="col-total">Total (₹)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of selectedInvoice.invoiceItems; let i = index">
+              <td class="text-center">{{ i + 1 }}</td>
+              <td class="product-desc">
+                {{ item.productName }}
+                <span class="barcode-text"><br>{{ item.barcode || '-' }} / {{ item.hsnCode || '-' }}</span>
+              </td>
+              <td class="text-center">{{ item.quantity }}</td>
+              <td class="text-right">{{ item.price.toFixed(2) }}</td>
+              <td class="text-right">{{ (item.quantity * item.price).toFixed(2) }}</td>
+              <td class="text-right">{{ item.discountPercentage.toFixed(2) }}</td>
+              <td class="text-right">{{ item.discountAmount.toFixed(2) }}</td>
+              <td class="text-right total-col"><strong>{{ item.total.toFixed(2) }}</strong></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Summary Section -->
+      <div class="invoice-summary-grid">
+        <div class="summary-left">
+          <h4 class="summary-title">GST Summary</h4>
+          <table class="gst-summary-table">
+            <thead>
+              <tr>
+                <th>Taxable Amt</th>
+                <th>CGST ({{ selectedInvoice.cgstPercentage }}%)</th>
+                <th>SGST ({{ selectedInvoice.sgstPercentage }}%)</th>
+                <th>Total Amt</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>₹{{ selectedInvoice.taxableAmount.toFixed(2) }}</td>
+                <td>₹{{ selectedInvoice.cgst.toFixed(2) }}</td>
+                <td>₹{{ selectedInvoice.sgst.toFixed(2) }}</td>
+                <td>₹{{ selectedInvoice.total.toFixed(2) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="summary-right">
+          <table class="payment-summary-table">
+            <tbody>
+              <tr>
+                <td>Subtotal (Before Discount):</td>
+                <td>₹{{ selectedInvoice.subtotal.toFixed(2) }}</td>
+              </tr>
+              <tr class="discount-row">
+                <td>Discount Applied:</td>
+                <td>- ₹{{ selectedInvoice.discount.toFixed(2) }}</td>
+              </tr>
+              <tr class="total-amount-row">
+                <td>TOTAL AMOUNT:</td>
+                <td>₹{{ selectedInvoice.total.toFixed(2) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Terms and Signature -->
+      <div class="footer-grid">
+        <div class="terms-section">
+          <h4>Terms & Conditions:</h4>
+          <ul>
+            <li>Goods once sold will not be taken back or exchanged</li>
+            <li>All disputes subject to local jurisdiction only</li>
+            <li>Warranty as per manufacturer's policy</li>
+            <li>Payment due upon receipt of invoice</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Footer Note -->
+      <div class="invoice-footer">
+        <p class="thank-you-note">Thank you for your business!</p>
+        <p class="computer-generated">This is a computer-generated invoice and does not require a physical signature.</p>
+      </div>
+    </div>
+  </div>
+</div>

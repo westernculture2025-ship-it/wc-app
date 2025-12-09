@@ -7,12 +7,14 @@ on:
     branches: [ "main" ]
 
 jobs:
+  # ---------- Angular Build Job ----------
   frontend-build:
     name: Angular Build
     runs-on: ubuntu-latest
-
+    # Run only if frontend files changed
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
     steps:
-      - name: Checkout Code
+      - name: Checkout Frontend Code
         uses: actions/checkout@v4
 
       - name: Setup Node.js
@@ -25,13 +27,16 @@ jobs:
           cd frontend
           npm install --legacy-peer-deps
           npm run build
+    # Only trigger this job if frontend folder changed
+    paths:
+      - 'frontend/**'
 
+  # ---------- Spring Boot Build Job ----------
   backend-build:
     name: Spring Boot Build
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout Code
+      - name: Checkout Backend Code
         uses: actions/checkout@v4
 
       - name: Setup Java 17
@@ -44,3 +49,6 @@ jobs:
         run: |
           cd backend
           mvn clean install
+    # Only trigger this job if backend folder changed
+    paths:
+      - 'backend/**'

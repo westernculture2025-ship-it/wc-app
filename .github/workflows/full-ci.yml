@@ -23,7 +23,7 @@ jobs:
       - name: Install Dependencies & Build Angular
         run: |
           cd frontend
-          npm install
+          npm install --legacy-peer-deps
           npm run build
 
   backend-build:

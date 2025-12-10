@@ -16,15 +16,27 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "18"
+          cache: "npm"
 
-      - name: Install & Build Angular
+      - name: Install Dependencies
         run: |
           cd frontend
           npm install --legacy-peer-deps
+
+      - name: Force Angular 14 Compatible TypeScript
+        run: |
+          cd frontend
+          npm uninstall typescript
+          npm install typescript@4.8.4 --save-dev
+
+      - name: Build Angular App
+        run: |
+          cd frontend
           npm run build
